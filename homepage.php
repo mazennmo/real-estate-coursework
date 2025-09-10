@@ -85,8 +85,8 @@
     <header>
         <h1>Find Your Home</h1>
         <nav>
-            <a href="#signin">Sign In</a>
-            <a href="#register">Register</a>
+            <a href="signin.php">Sign In</a>
+            <a href="register.php">Register</a>
         </nav>
     </header>
 

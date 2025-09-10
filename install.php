@@ -1,7 +1,7 @@
 <?php
 $servername = "localhost";
 $username = "root";
-$password = ""; // Update if needed
+$password = ""; 
 $dbname = "realestate";
 
 try {
@@ -111,7 +111,6 @@ try {
             message_id INT PRIMARY KEY AUTO_INCREMENT,
             senderID INT,
             receiverID INT,
-            offer INT,
             property_id INT,
             messages TEXT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
