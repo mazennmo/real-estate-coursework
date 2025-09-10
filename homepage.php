@@ -101,10 +101,10 @@
     <section class="features">
         <div class="feature-box">
             <h3>Browse Listings</h3>
-            <p>Explore a wide range of homes for sale and rent across the country.</p>
+            <p>Explore a wide range of homes for sale across the country.</p>
         </div>
         <div class="feature-box">
-            <h3>Save Favourites</h3>
+            <h3>Saved Favourites</h3>
             <p>Keep track of the properties you love and compare them easily.</p>
         </div>
         <div class="feature-box">
