@@ -34,7 +34,7 @@ try {
         $_SESSION['lastname']  = $userRow['lastname'];
         $_SESSION['email']     = $userRow['email'];
 
-        header("Location: index.html"); // or home.php
+        header("Location: homepage.php");
         exit;
       } else {
         $errors['auth'] = "Invalid email or password.";
@@ -75,7 +75,7 @@ function err($k,$errors){ return isset($errors[$k]) ? '<div class="error">'.$err
 <body>
 <header>
   <div><strong>Real Estate Platform</strong></div>
-  <a href="index.html">Home</a>
+  <a href="homepage.php">Home</a>
 </header>
 
 <main class="wrap">
