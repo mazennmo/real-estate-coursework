@@ -1,79 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"> <!-- Sets character encoding for correct display of text -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Makes site responsive on all devices -->
     <title>Real Estate Platform</title>
+
     <style>
+        /* General body styling */
         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            background-color: #f5f5f5;
-            color: #333;
+            font-family: Arial, sans-serif; /* Clean, easy-to-read font */
+            margin: 0; /* Remove default margins */
+            background-color: #f5f5f5; /* Light grey background */
+            color: #333; /* Dark text for good readability */
         }
+
+        /* Header section */
         header {
-            background-color: #2196f3;
-            color: white;
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background-color: #2196f3; /* Blue background */
+            color: white; /* White text */
+            padding: 1rem 2rem; /* Spacing inside header */
+            display: flex; /* Flexbox for alignment */
+            justify-content: space-between; /* Push title left and nav right */
+            align-items: center; /* Vertically center elements */
         }
+
         header h1 {
-            margin: 0;
+            margin: 0; /* Remove default margin */
         }
+
+        /* Navigation links */
         nav a {
-            margin-left: 1.5rem;
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
+            margin-left: 1.5rem; /* Space between links */
+            color: white; /* White text */
+            text-decoration: none; /* Remove underline */
+            font-weight: bold; /* Make text stand out */
         }
+
+        /* Search banner section */
         .search-section {
-            background: linear-gradient(to right, #64b5f6, #42a5f5);
-            padding: 3rem 2rem;
-            text-align: center;
-            color: white;
+            background: linear-gradient(to right, #64b5f6, #42a5f5); /* Gradient blue background */
+            padding: 3rem 2rem; /* Large padding for spacing */
+            text-align: center; /* Center text */
+            color: white; /* White text */
         }
+
+        /* Search bar layout */
         .search-bar {
             margin-top: 1rem;
-            display: flex;
+            display: flex; /* Input and button side by side */
             justify-content: center;
         }
+
+        /* Search input box */
         .search-bar input[type="text"] {
-            width: 50%;
+            width: 50%; /* Takes half screen width */
             padding: 0.8rem;
             border: none;
-            border-radius: 5px 0 0 5px;
+            border-radius: 5px 0 0 5px; /* Rounded left corners */
             font-size: 1rem;
         }
+
+        /* Search button */
         .search-bar button {
             padding: 0.8rem 1rem;
             border: none;
-            background-color: #1e88e5;
+            background-color: #1e88e5; /* Slightly darker blue */
             color: white;
-            border-radius: 0 5px 5px 0;
-            cursor: pointer;
+            border-radius: 0 5px 5px 0; /* Rounded right corners */
+            cursor: pointer; /* Show pointer on hover */
             font-size: 1rem;
         }
+
+        /* Features section */
         .features {
-            display: flex;
-            justify-content: space-around;
+            display: flex; /* Arrange features side by side */
+            justify-content: space-around; /* Space between each box */
             padding: 2rem;
-            background-color: #fff;
+            background-color: #fff; /* White background */
         }
+
+        /* Individual feature box */
         .feature-box {
-            background-color: #e3f2fd;
+            background-color: #e3f2fd; /* Light blue background */
             padding: 1.5rem;
-            border-radius: 10px;
-            width: 25%;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 10px; /* Rounded corners */
+            width: 25%; /* Each box takes about a quarter of width */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle shadow */
             text-align: center;
         }
+
         .feature-box h3 {
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.5rem; /* Small space below heading */
         }
+
+        /* Footer styling (not currently in body) */
         footer {
-            background-color: #1976d2;
+            background-color: #1976d2; /* Darker blue */
             color: white;
             text-align: center;
             padding: 1rem;
@@ -82,22 +104,25 @@
     </style>
 </head>
 <body>
+    <!-- Top navigation header -->
     <header>
         <h1>Find Your Home</h1>
         <nav>
-            <a href="signin.php">Sign In</a>
-            <a href="register.php">Register</a>
+            <a href="signin.php">Sign In</a> <!-- Link to sign in page -->
+            <a href="register.php">Register</a> <!-- Link to register page -->
         </nav>
     </header>
 
+    <!-- Hero search section -->
     <section class="search-section">
         <h2>Find your place to call home</h2>
         <div class="search-bar">
-            <input type="text" placeholder="Enter city, postcode or area...">
-            <button>Search</button>
+            <input type="text" placeholder="Enter city, postcode or area..."> <!-- Search input -->
+            <button>Search</button> <!-- Search button -->
         </div>
     </section>
 
+    <!-- Features section (3 key site features) -->
     <section class="features">
         <div class="feature-box">
             <h3>Browse Listings</h3>
@@ -112,4 +137,7 @@
             <p>View seller ratings and reviews to buy with confidence.</p>
         </div>
     </section>
+
+
+</body>
 </html>
