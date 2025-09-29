@@ -42,7 +42,7 @@ $ALLOWED_TYPES = [
   'Cottage','Maisonette','Studio','Farmhouse','Mansion'
 ];
 
-// Bedrooms/Bathrooms dropdown labels (we will store '8+' as integer 8)
+// Bedrooms/Bathrooms dropdown labels (we will store '10+' as integer 10)
 $ALLOWED_ROOM_LABELS = ['1','2','3','4','5','6','7','8','9','10+'];
 
 try {
@@ -68,8 +68,8 @@ try {
     $city            = trim($_POST['city'] ?? '');
     $postcode        = trim($_POST['postcode'] ?? '');
     $status          = trim($_POST['status'] ?? 'For sale'); // default
-    $bedrooms_label  = trim($_POST['bedrooms'] ?? '');       // '1'..'7' or '8+'
-    $bathrooms_label = trim($_POST['bathrooms'] ?? '');      // '1'..'7' or '8+'
+    $bedrooms_label  = trim($_POST['bedrooms'] ?? '');       // '1'..'7' or '10+'
+    $bathrooms_label = trim($_POST['bathrooms'] ?? '');      // '1'..'7' or '10+'
     $area_sqft       = trim($_POST['area_sqft'] ?? '');
     $garden_sqft     = trim($_POST['garden_sqft'] ?? '');
     $garage          = trim($_POST['garage'] ?? '');
