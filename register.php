@@ -30,9 +30,9 @@ try {
     if ($lastname  === '' || mb_strlen($lastname)  > 30) 
         $errors['lastname']  = "Last name is required (≤30 chars).";
 
-    // Email must be valid format and ≤30 chars
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 30) 
-        $errors['email'] = "Valid email required (≤30 chars).";
+    // Email must be valid format and ≤60 chars
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($email) > 60) 
+        $errors['email'] = "Valid email required (≤60 chars).";
 
     // Phone optional, but ≤20 chars if entered
     if ($phone !== '' && mb_strlen($phone) > 20) 

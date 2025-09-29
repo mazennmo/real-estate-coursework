@@ -18,7 +18,7 @@ try {
             user_id INT AUTO_INCREMENT PRIMARY KEY,
             firstname VARCHAR(30) NOT NULL,
             lastname VARCHAR(30) NOT NULL,
-            email VARCHAR(30) NOT NULL UNIQUE,
+            email VARCHAR(60) NOT NULL UNIQUE,
             password_hash VARCHAR(255) NOT NULL,
             phone VARCHAR(20),
             date_joined DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -49,7 +49,7 @@ try {
     $conn->exec("
         CREATE TABLE IF NOT EXISTS property_type (
             Property_typeID INT PRIMARY KEY,
-            Property_type_name TEXT
+            Property_type_name ENUM('Detatched', 'Semi-detatched', 'Terraced', 'Flat', 'Bungalow','Cottage', 'Maisonette', 'Studio', 'Farmhouse','Mansion') NOT NULL
         )
     ");
 
@@ -66,8 +66,8 @@ try {
             postcode VARCHAR(10),
             date_listed DATETIME DEFAULT CURRENT_TIMESTAMP,
             status ENUM('Sold', 'Under offer', 'For sale'),
-            bedrooms INT,
-            bathrooms INT,
+            bedrooms ENUM('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+'),
+            bathrooms ENUM('1', '2', '3', '4', '5', '6', '7', '8', '9', '10+'),
             area_sqft INT,
             garden_sqft INT,
             garage INT,

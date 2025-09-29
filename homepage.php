@@ -1,3 +1,10 @@
+<?php
+// Start session to detect whether the user is signed in
+session_start();
+
+// Decide where the Sell button should go
+$sellUrl = isset($_SESSION['user_id']) ? 'propertylist.php' : 'signin.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -71,6 +78,31 @@
             font-size: 1rem;
         }
 
+        /* Sell CTA (call-to-action) */
+        .sell-cta {
+            margin-top: 1.2rem;
+            display: flex;
+            justify-content: center;
+        }
+        .sell-btn {
+            display: inline-block;
+            background-color: #ff9800; /* Accent colour to stand out */
+            color: #fff;
+            border: none;
+            border-radius: 999px;
+            padding: 0.85rem 1.4rem;
+            font-size: 1rem;
+            font-weight: 700;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            cursor: pointer;
+        }
+        .sell-btn:focus,
+        .sell-btn:hover {
+            outline: none;
+            filter: brightness(0.95);
+        }
+
         /* Features section */
         .features {
             display: flex; /* Arrange features side by side */
@@ -120,6 +152,14 @@
             <input type="text" placeholder="Enter city, postcode or area..."> <!-- Search input -->
             <button>Search</button> <!-- Search button -->
         </div>
+
+        <!-- Sell CTA: decides target based on session -->
+        <div class="sell-cta">
+            <!-- If signed in → propertylist.php, else → signin.php -->
+            <a class="sell-btn" href="<?= htmlspecialchars($sellUrl) ?>" aria-label="Sell your property">
+                Sell your property
+            </a>
+        </div>
     </section>
 
     <!-- Features section (3 key site features) -->
@@ -137,7 +177,5 @@
             <p>View seller ratings and reviews to buy with confidence.</p>
         </div>
     </section>
-
-
 </body>
 </html>
