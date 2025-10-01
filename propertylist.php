@@ -75,9 +75,9 @@ try {
     $garage          = trim($_POST['garage'] ?? '');
     $chosenFeatures  = (array)($_POST['featureIDs'] ?? []);   // array of featureID ints
 
-    // Coerce '8+' to integer 8 for storage
-    $bedrooms  = ($bedrooms_label === '8+') ? 8 : $bedrooms_label;
-    $bathrooms = ($bathrooms_label === '8+') ? 8 : $bathrooms_label;
+    // Coerce '10+' to integer 10 for storage
+    $bedrooms  = ($bedrooms_label === '10+') ? 10 : $bedrooms_label;
+    $bathrooms = ($bathrooms_label === '10+') ? 10 : $bathrooms_label;
 
     // === Validate (lengths & types match your schema) ===
     if ($title === '' || mb_strlen($title) > 70)             $errors['title'] = "Title is required (≤70 chars).";
