@@ -33,10 +33,10 @@ function err($k,$errors){ return isset($errors[$k]) ? '<div class="error">'.$err
 function checked($name,$val){ return (isset($_POST[$name]) && in_array($val,(array)$_POST[$name])) ? 'checked' : ''; }
 function sel($name,$val){ return (isset($_POST[$name]) && $_POST[$name] === $val) ? 'selected' : ''; }
 
-// Allowed values for STATUS (as per schema)
+// Allowed values for STATUS 
 $ALLOWED_STATUS = ['Sold','Under offer','For sale'];
 
-// Allowed ENUM values for Property Type (must mirror your schema EXACTLY)
+// Allowed ENUM values for Property Type
 $ALLOWED_TYPES = [
   'Detatched','Semi-detatched','Terraced','Flat','Bungalow',
   'Cottage','Maisonette','Studio','Farmhouse','Mansion'
@@ -290,13 +290,13 @@ try {
       <div class="row">
         <div class="group">
           <div class="label">Property Type</div>
-          <select class="select" name="property_type" required>
+          <select class="select" name="property_type_name" required>
             <option value="">Select…</option>
             <?php foreach ($ALLOWED_TYPES as $t): ?>
-              <option value="<?= htmlspecialchars($t) ?>" <?= sel('property_type',$t) ?>><?= htmlspecialchars($t) ?></option>
+              <option value="<?= htmlspecialchars($t) ?>" <?= sel('property_type_name',$t) ?>><?= htmlspecialchars($t) ?></option>
             <?php endforeach; ?>
           </select>
-          <?= err('property_type',$errors) ?>
+          <?= err('property_type_name',$errors) ?>
         </div>
 
         <div class="group">

@@ -50,17 +50,12 @@ try {
     ");
 
     // PROPERTY TYPE LOOKUP  (clean names + auto IDs + unique)
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS property_type (
-            Property_typeID INT AUTO_INCREMENT PRIMARY KEY,
-            Property_type_name VARCHAR(30) NOT NULL UNIQUE
-        )
-    ");
-    // seed types (correct spellings)
-    $types = [
-        'Detached','Semi-detached','Terraced','Flat','Bungalow',
-        'Cottage','Maisonette','Studio','Farmhouse','Mansion'
-    ];
+   // $conn->exec("
+     //   CREATE TABLE IF NOT EXISTS property_type (
+       //     Property_typeID INT AUTO_INCREMENT PRIMARY KEY,
+         //   Property_type_name VARCHAR(30) NOT NULL UNIQUE
+       // )
+   // ");
     $stmt = $conn->prepare("INSERT IGNORE INTO property_type (Property_type_name) VALUES (:n)");
     foreach ($types as $n) { $stmt->execute([':n' => $n]); }
 
@@ -69,6 +64,7 @@ try {
         CREATE TABLE IF NOT EXISTS properties (
             property_id INT AUTO_INCREMENT PRIMARY KEY,
             Property_typeID INT NOT NULL,
+            Property_type_name ENUM('Detatched','Semi-detatched','Terraced','Flat','Bungalow','Cottage','Maisonette','Studio','Farmhouse','Mansion')
             title VARCHAR(70) NOT NULL,
             description TEXT NOT NULL,
             price INT NOT NULL,
@@ -81,11 +77,11 @@ try {
             bathrooms ENUM('1','2','3','4','5','6','7','8','9','10+') NOT NULL,
             area_sqft INT NULL,
             garden_sqft INT NULL,
-            garage INT NULL,
-            FOREIGN KEY(Property_typeID) REFERENCES property_type(Property_typeID)
-                ON UPDATE CASCADE ON DELETE RESTRICT
-        )
-    ");
+            garage INT NULL)");
+           // FOREIGN KEY(Property_typeID) REFERENCES property_type(Property_typeID)
+             //   ON UPDATE CASCADE ON DELETE RESTRICT
+        //)
+    //");
 
     // FEATURES
     $conn->exec("
