@@ -6,7 +6,7 @@
 
 session_start();
 
-// ==== AUTH GUARD: must be signed in (session from your signin page) ====
+// ==== AUTH GUARD: must be signed in ====
 if (empty($_SESSION['user_id'])) {
   header("Location: signin.php");
   exit;
@@ -21,35 +21,31 @@ $errors = [];
 $done = false;
 $newPropertyId = null;
 
-// ---- CSRF token (simple, effective) ----
+// ---- CSRF token ----
 if (empty($_SESSION['csrf'])) {
   $_SESSION['csrf'] = bin2hex(random_bytes(32));
 }
 function csrf_field(): string { return '<input type="hidden" name="csrf" value="'.htmlspecialchars($_SESSION['csrf']).'">'; }
 
-// ---- Tiny helpers for sticky form and error display ----
+// ---- Helpers ----
 function old($k){ return htmlspecialchars($_POST[$k] ?? '', ENT_QUOTES); }
 function err($k,$errors){ return isset($errors[$k]) ? '<div class="error">'.$errors[$k].'</div>' : ''; }
-function checked($name,$val){ return (isset($_POST[$name]) && in_array($val,(array)$_POST[$name])) ? 'checked' : ''; }
-function sel($name,$val){ return (isset($_POST[$name]) && $_POST[$name] === $val) ? 'selected' : ''; }
+function checked($name,$val){ return (isset($_POST[$name]) && in_array($val,(array)$_POST[$name], true)) ? 'checked' : ''; }
+function sel($name,$val){ return (isset($_POST[$name]) && $_POST[$name] === (string)$val) ? 'selected' : ''; }
 
-// Allowed values for STATUS 
+// Allowed values
 $ALLOWED_STATUS = ['Sold','Under offer','For sale'];
-
-// Allowed ENUM values for Property Type
 $ALLOWED_TYPES = [
-  'Detatched','Semi-detatched','Terraced','Flat','Bungalow',
+  'Detached','Semi-detached','Terraced','Flat','Bungalow',
   'Cottage','Maisonette','Studio','Farmhouse','Mansion'
 ];
-
-// Bedrooms/Bathrooms dropdown labels (we will store '10+' as integer 10)
 $ALLOWED_ROOM_LABELS = ['1','2','3','4','5','6','7','8','9','10+'];
 
 try {
   $pdo = new PDO($dsn, $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 
-  // ==== Load reference data for checkboxes (features) ====
-  $features = $pdo->query("SELECT featureID, featureName FROM features ORDER BY featureName")->fetchAll();
+  // Load features (optional)
+  $features = $pdo->query("SELECT featureID, featureName FROM features ORDER BY featureName")->fetchAll(PDO::FETCH_ASSOC);
 
   // ---- Handle submit ----
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -60,53 +56,41 @@ try {
     }
 
     // === Collect ===
-    $title           = trim($_POST['title'] ?? '');
-    $property_type   = trim($_POST['property_type'] ?? '');  // ENUM string
-    $description     = trim($_POST['description'] ?? '');
-    $price           = trim($_POST['price'] ?? '');
-    $location        = trim($_POST['location'] ?? '');
-    $city            = trim($_POST['city'] ?? '');
-    $postcode        = trim($_POST['postcode'] ?? '');
-    $status          = trim($_POST['status'] ?? 'For sale'); // default
-    $bedrooms_label  = trim($_POST['bedrooms'] ?? '');       // '1'..'7' or '10+'
-    $bathrooms_label = trim($_POST['bathrooms'] ?? '');      // '1'..'7' or '10+'
-    $area_sqft       = trim($_POST['area_sqft'] ?? '');
-    $garden_sqft     = trim($_POST['garden_sqft'] ?? '');
-    $garage          = trim($_POST['garage'] ?? '');
-    $chosenFeatures  = (array)($_POST['featureIDs'] ?? []);   // array of featureID ints
+    $title              = trim($_POST['title'] ?? '');
+    $property_type_name = trim($_POST['property_type_name'] ?? '');
+    $description        = trim($_POST['description'] ?? '');
+    $price              = trim($_POST['price'] ?? '');
+    $location           = trim($_POST['location'] ?? '');
+    $city               = trim($_POST['city'] ?? '');
+    $postcode           = trim($_POST['postcode'] ?? '');
+    $status             = trim($_POST['status'] ?? 'For sale');
+    $bedrooms_label     = trim($_POST['bedrooms'] ?? '');
+    $bathrooms_label    = trim($_POST['bathrooms'] ?? '');
+    $area_sqft          = trim($_POST['area_sqft'] ?? '');
+    $garden_sqft        = trim($_POST['garden_sqft'] ?? '');
+    $garage             = trim($_POST['garage'] ?? '');
+    $chosenFeatures     = (array)($_POST['featureIDs'] ?? []);
 
     // Coerce '10+' to integer 10 for storage
     $bedrooms  = ($bedrooms_label === '10+') ? 10 : $bedrooms_label;
     $bathrooms = ($bathrooms_label === '10+') ? 10 : $bathrooms_label;
 
-    // === Validate (lengths & types match your schema) ===
-    if ($title === '' || mb_strlen($title) > 70)             $errors['title'] = "Title is required (≤70 chars).";
-
-    // Property Type must be one of the ENUM values
-    if (!in_array($property_type, $ALLOWED_TYPES, true)) {
-      $errors['property_type'] = "Select a valid property type.";
-    }
-
-    if ($description === '' || mb_strlen($description) < 30) $errors['description'] = "Please add a clear description (≥30 chars).";
-    if ($price === '' || !ctype_digit($price) || (int)$price < 0) $errors['price'] = "Enter a valid non-negative price (whole number).";
-
-    if ($location === '' || mb_strlen($location) > 70)       $errors['location'] = "Location is required (≤70 chars).";
-    if ($city === '' || mb_strlen($city) > 30)               $errors['city'] = "City is required (≤30 chars).";
-    if ($postcode === '' || mb_strlen($postcode) > 10)       $errors['postcode'] = "Postcode is required (≤10 chars).";
-
-    if (!in_array($status, $ALLOWED_STATUS, true))           $errors['status'] = "Choose a valid status.";
-
-    // Bedrooms/Bathrooms must be one of our labels; after coercion ensure digits and >=1
-    if (!in_array($bedrooms_label, $ALLOWED_ROOM_LABELS, true) || !ctype_digit((string)$bedrooms) || (int)$bedrooms < 1) {
-      $errors['bedrooms'] = "Choose bedrooms from the list.";
-    }
-    if (!in_array($bathrooms_label, $ALLOWED_ROOM_LABELS, true) || !ctype_digit((string)$bathrooms) || (int)$bathrooms < 1) {
-      $errors['bathrooms']= "Choose bathrooms from the list.";
-    }
-
-    if ($area_sqft !== ''   && (!ctype_digit($area_sqft)   || (int)$area_sqft   < 0)) $errors['area_sqft']   = "Area (sqft) must be a positive integer.";
+    // === Validate ===
+    if ($title === '' || mb_strlen($title) > 70)                           $errors['title'] = "Title is required (≤70 chars).";
+    if (!in_array($property_type_name, $ALLOWED_TYPES, true))              $errors['property_type_name'] = "Select a valid property type.";
+    if ($description === '' || mb_strlen($description) < 30)               $errors['description'] = "Please add a clear description (≥30 chars).";
+    if ($price === '' || !ctype_digit($price) || (int)$price < 0)          $errors['price'] = "Enter a valid non-negative price (whole number).";
+    if ($location === '' || mb_strlen($location) > 70)                     $errors['location'] = "Location is required (≤70 chars).";
+    if ($city === '' || mb_strlen($city) > 30)                             $errors['city'] = "City is required (≤30 chars).";
+    if ($postcode === '' || mb_strlen($postcode) > 10)                     $errors['postcode'] = "Postcode is required (≤10 chars).";
+    if (!in_array($status, $ALLOWED_STATUS, true))                         $errors['status'] = "Choose a valid status.";
+    if (!in_array($bedrooms_label, $ALLOWED_ROOM_LABELS, true) ||
+        !ctype_digit((string)$bedrooms) || (int)$bedrooms < 1)             $errors['bedrooms'] = "Choose bedrooms from the list.";
+    if (!in_array($bathrooms_label, $ALLOWED_ROOM_LABELS, true) ||
+        !ctype_digit((string)$bathrooms) || (int)$bathrooms < 1)           $errors['bathrooms']= "Choose bathrooms from the list.";
+    if ($area_sqft   !== '' && (!ctype_digit($area_sqft)   || (int)$area_sqft   < 0)) $errors['area_sqft']   = "Area (sqft) must be a positive integer.";
     if ($garden_sqft !== '' && (!ctype_digit($garden_sqft) || (int)$garden_sqft < 0)) $errors['garden_sqft'] = "Garden (sqft) must be a positive integer.";
-    if ($garage !== ''      && (!ctype_digit($garage)      || (int)$garage      < 0)) $errors['garage']      = "Garage spaces must be a positive integer.";
+    if ($garage      !== '' && (!ctype_digit($garage)      || (int)$garage      < 0)) $errors['garage']      = "Garage spaces must be a positive integer.";
 
     // === Optional image (stored in property_images) ===
     $image_rel_path = null;
@@ -114,7 +98,7 @@ try {
       $f = $_FILES['main_image'];
       if ($f['error'] === UPLOAD_ERR_OK) {
         $allowed = ['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp'];
-        $mime = mime_content_type($f['tmp_name']);
+        $mime = @mime_content_type($f['tmp_name']);
         if (!isset($allowed[$mime])) {
           $errors['main_image'] = "Image must be JPG, PNG, or WEBP.";
         } elseif ($f['size'] > 5*1024*1024) {
@@ -128,7 +112,7 @@ try {
           if (!move_uploaded_file($f['tmp_name'], $target)) {
             $errors['main_image'] = "Failed to save the image.";
           } else {
-            $image_rel_path = 'uploads/'.$filename; // relative URL to serve later
+            $image_rel_path = 'uploads/'.$filename; // relative URL
           }
         }
       } elseif ($f['error'] !== UPLOAD_ERR_NO_FILE) {
@@ -140,17 +124,17 @@ try {
     if (!$errors) {
       $pdo->beginTransaction();
 
-      // 1) Insert into properties (now using Property_type_name ENUM)
+      // 1) Insert into properties (uses property_type_name directly)
       $stmt = $pdo->prepare("
         INSERT INTO properties
-          (Property_type_name, title, description, price, location, city, postcode, status,
+          (property_type_name, title, description, price, location, city, postcode, status,
            bedrooms, bathrooms, area_sqft, garden_sqft, garage)
         VALUES
           (:ptype, :title, :descr, :price, :loc, :city, :pc, :status,
            :beds, :baths, :area, :garden, :garage)
       ");
       $stmt->execute([
-        ':ptype'  => $property_type,
+        ':ptype'  => $property_type_name,
         ':title'  => $title,
         ':descr'  => $description,
         ':price'  => (int)$price,
@@ -181,20 +165,18 @@ try {
       }
 
       // 4) Ensure the user has the Seller role in user_roles
-      //    a) find/create roleID for 'Seller'
       $roleSellerId = null;
       $q = $pdo->prepare("SELECT roleID FROM roles WHERE roleName = 'Seller' LIMIT 1");
       $q->execute();
-      $r = $q->fetch();
+      $r = $q->fetch(PDO::FETCH_ASSOC);
       if ($r) {
         $roleSellerId = (int)$r['roleID'];
       } else {
-        // If roles table is empty/unseeded, insert sensible defaults.
+        // seed fallback just in case
         $pdo->exec("INSERT IGNORE INTO roles (roleID, roleName) VALUES (1,'Buyer')");
         $pdo->exec("INSERT IGNORE INTO roles (roleID, roleName) VALUES (2,'Seller')");
         $roleSellerId = 2;
       }
-      //    b) upsert mapping in user_roles
       $ur = $pdo->prepare("SELECT 1 FROM user_roles WHERE userID = ? AND roleID = ? LIMIT 1");
       $ur->execute([$_SESSION['user_id'], $roleSellerId]);
       if (!$ur->fetch()) {
@@ -205,7 +187,7 @@ try {
       $pdo->commit();
       $done = true;
 
-      // Rotate CSRF after success to prevent accidental resubmits
+      // Rotate CSRF after success
       $_SESSION['csrf'] = bin2hex(random_bytes(32));
     }
   }
@@ -280,44 +262,49 @@ try {
     <form method="post" enctype="multipart/form-data" novalidate>
       <?= csrf_field() ?>
 
-      <div class="group">
-        <div class="label">Title</div>
-        <input class="input" type="text" name="title" placeholder="e.g. Modern 3-bed family house" value="<?= old('title') ?>" required>
-        <div class="hint">Short, descriptive (≤70 chars).</div>
-        <?= err('title',$errors) ?>
-      </div>
-
       <div class="row">
-        <div class="group">
-          <div class="label">Property Type</div>
-          <select class="select" name="property_type_name" required>
-            <option value="">Select…</option>
-            <?php foreach ($ALLOWED_TYPES as $t): ?>
-              <option value="<?= htmlspecialchars($t) ?>" <?= sel('property_type_name',$t) ?>><?= htmlspecialchars($t) ?></option>
-            <?php endforeach; ?>
-          </select>
-          <?= err('property_type_name',$errors) ?>
-        </div>
+  <div class="group">
+    <div class="label">Title</div>
+    <input class="input" type="text" name="title" placeholder="e.g. Modern 3-bed family house" value="<?= old('title') ?>" required>
+    <div class="hint">Short, descriptive (≤70 chars).</div>
+    <?= err('title', $errors) ?>
+  </div>
+</div>
 
-        <div class="group">
-          <div class="label">Status</div>
-          <select class="select" name="status" required>
-            <?php foreach ($ALLOWED_STATUS as $st): ?>
-              <option value="<?= htmlspecialchars($st) ?>" <?= (old('status')===$st || (old('status')==='' && $st==='For sale')) ? 'selected':'' ?>>
-                <?= htmlspecialchars($st) ?>
-              </option>
-            <?php endforeach; ?>
-          </select>
-          <?= err('status',$errors) ?>
-        </div>
-      </div>
+<div class="row">
+  <div class="group">
+    <div class="label">Property Type</div>
+    <select class="select" name="property_type_name" required>
+      <option value="">Select…</option>
+      <?php foreach ($ALLOWED_TYPES as $t): ?>
+        <option value="<?= htmlspecialchars($t) ?>" <?= sel('property_type_name', $t) ?>><?= htmlspecialchars($t) ?></option>
+      <?php endforeach; ?>
+    </select>
+    <?= err('property_type_name', $errors) ?>
+  </div>
+</div>
 
-      <div class="row">
-        <div class="group">
-          <div class="label">Price (£)</div>
-          <input class="input" type="number" min="0" step="1" name="price" value="<?= old('price') ?>" required>
-          <?= err('price',$errors) ?>
-        </div>
+<div class="row">
+  <div class="group">
+    <div class="label">Status</div>
+    <select class="select" name="status" required>
+      <?php foreach ($ALLOWED_STATUS as $st): ?>
+        <option value="<?= htmlspecialchars($st) ?>" <?= (old('status') === $st || (old('status') === '' && $st === 'For sale')) ? 'selected' : '' ?>>
+          <?= htmlspecialchars($st) ?>
+        </option>
+      <?php endforeach; ?>
+    </select>
+    <?= err('status', $errors) ?>
+  </div>
+</div>
+
+<div class="row">
+  <div class="group">
+    <div class="label">Price (£)</div>
+    <input class="input" type="number" min="0" step="1" name="price" value="<?= old('price') ?>" required>
+    <?= err('price', $errors) ?>
+  </div>
+</div>
 
         <div class="group">
           <div class="label">Bedrooms</div>
