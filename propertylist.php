@@ -301,7 +301,7 @@ try {
 <div class="row">
   <div class="group">
     <div class="label">Price (£)</div>
-    <input class="input" type="number" min="0" step="1" name="price" value="<?= old('price') ?>" required>
+    <input class="input" type="number" min="0" step="10000" name="price" value="<?= old('price') ?>" required>
     <?= err('price', $errors) ?>
   </div>
 </div>

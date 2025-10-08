@@ -48,7 +48,7 @@ try {
 
     /* ============================ PROPERTIES ============================ */
 
-    // Create properties with a direct property_type_name column (ENUM for safety)
+    // Create properties with a direct property_type_name column 
     $conn->exec("
         CREATE TABLE IF NOT EXISTS properties (
             property_id INT AUTO_INCREMENT PRIMARY KEY,
