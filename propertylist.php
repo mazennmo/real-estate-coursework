@@ -234,7 +234,6 @@ try {
   <div><strong>Real Estate Platform</strong></div>
   <div>
     <a href="homepage.php">Home</a>
-    <a href="signin.php">Account</a>
   </div>
 </header>
 
