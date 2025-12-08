@@ -165,7 +165,7 @@ $sellUrl = isset($_SESSION['user_id']) ? 'propertylist.php' : 'signin.php';
     <!-- Features section (3 key site features) -->
     <section class="features">
         <div class="feature-box">
-            <h3>Browse Listings</h3>
+            <a href="listings.php">Browse Listings</a>
             <p>Explore a wide range of homes for sale across the country.</p>
         </div>
         <div class="feature-box">

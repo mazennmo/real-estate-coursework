@@ -1,7 +1,7 @@
 <?php
 $servername   = "localhost";
 $username     = "root";
-$password     = "";
+$password     = "root";
 $dbname       = "realestate";
 
 try {
@@ -71,23 +71,7 @@ try {
             garage INT NULL
         )
     ");
-    $conn->exec("
-  ALTER TABLE properties
-  ADD COLUMN IF NOT EXISTS property_type_name ENUM(
-    'Detached','Semi-detached','Terraced','Flat','Bungalow',
-    'Cottage','Maisonette','Studio','Farmhouse','Mansion'
-  ) NOT NULL AFTER property_id
-");
 
-
-    // If table existed before without the column, add it 
-    $conn->exec("
-        ALTER TABLE properties
-        ADD COLUMN IF NOT EXISTS property_type_name ENUM(
-            'Detached','Semi-detached','Terraced','Flat','Bungalow',
-            'Cottage','Maisonette','Studio','Farmhouse','Mansion'
-        ) NOT NULL FIRST
-    ");
 
     /* ============================= FEATURES ============================= */
     $conn->exec("

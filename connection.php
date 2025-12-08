@@ -1,10 +1,14 @@
 <?php
-$servername = "localhost";
-$username="root";
-$password="";
-$dbname="realestate";
+$host = 'localhost';
+$dbname   = 'realestate';
+$user = 'root';
+$pass = 'root'; 
 
-$conn =new PDO("mysql:host=$servername; dbname=$dbname", $username, $password);
-$conn->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
-echo("connected!");
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Database error: " . $e->getMessage());
+}
 ?>
+
