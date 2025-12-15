@@ -169,7 +169,7 @@ $sellUrl = isset($_SESSION['user_id']) ? 'propertylist.php' : 'signin.php';
             <p>Explore a wide range of homes for sale across the country.</p>
         </div>
         <div class="feature-box">
-            <h3>Saved Favourites</h3>
+            <a href = "favourites.php">Saved Favourites</a>
             <p>Keep track of the properties you love and compare them easily.</p>
         </div>
         <div class="feature-box">

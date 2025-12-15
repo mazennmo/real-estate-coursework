@@ -1,6 +1,6 @@
 <?php
 /**
- * propertylist.php — Minimal version with simple image upload
+
  */
 
 session_start();
@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// 2) Connect to the database (adjust password if needed)
+// 2) Connect to the database 
 $dsn  = "mysql:host=localhost;dbname=realestate;charset=utf8mb4";
 $user = "root";
 $pass = "root";

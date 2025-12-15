@@ -1,5 +1,7 @@
 <?php
-// listings.php — corrected to your schema (no address column, no config.php)
+// listings.php — corrected to your schema + Favourite button -> favourites.php
+
+session_start(); // ✅ ADDED (needed to know which user is favouriting)
 
 // -------- DB CONNECTION (XAMPP defaults) --------
 $host = 'localhost';
@@ -14,6 +16,37 @@ try {
   die('Database connection failed: ' . htmlspecialchars($e->getMessage()));
 }
 
+/* ===========================================================
+   ✅ ADDED: Handle Favourite button click
+   Adds (buyer_id, property_id) into favourites table
+   Then redirects to favourites.php
+   =========================================================== */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fav_property_id'])) {
+
+  // Must be logged in
+  if (!isset($_SESSION['user_id'])) {
+    header("Location: signin.php");
+    exit;
+  }
+
+  $buyerId    = (int)$_SESSION['user_id'];
+  $propertyId = (int)$_POST['fav_property_id'];
+
+  $stmtFav = $pdo->prepare("
+    INSERT IGNORE INTO favourites (buyer_id, property_id)
+    VALUES (:bid, :pid)
+  ");
+  $stmtFav->execute([
+    ':bid' => $buyerId,
+    ':pid' => $propertyId
+  ]);
+
+  header("Location: favourites.php");
+  exit;
+}
+/* ========================= END ADDED PART ========================= */
+
+
 // -------- INPUTS (GET) --------
 $location = trim($_GET['location'] ?? ''); // matches location/city/postcode
 $keyword  = trim($_GET['q'] ?? '');        // title/description
@@ -24,8 +57,7 @@ $page     = max(1, (int)($_GET['page'] ?? 1));
 $perPage  = 10;
 $offset   = ($page - 1) * $perPage;
 
-// -------- WHERE (match your columns exactly) --------
-$where  = ["status = 'For sale'"];
+$where  = [];
 $params = [];
 
 if ($location !== '') {
@@ -127,7 +159,17 @@ $priceStops = [0,50000,100000,150000,200000,250000,300000,400000,500000,600000,7
     .price{font-size:1.25rem;font-weight:800;margin:.5rem 0}
     .meta{display:flex;gap:1rem;color:var(--muted);font-size:.95rem;margin-bottom:.4rem}
     .agent{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #eef1f6;padding-top:.7rem;color:var(--muted);font-size:.93rem}
-    .agent .cta a{margin-left:.6rem;text-decoration:none;padding:.45rem .7rem;border:1px solid #d7dbe3;border-radius:10px;color:var(--ink);background:#fff}
+
+    /* ✅ ADDED: style the favourite button */
+    .fav-btn{
+      padding:.45rem .7rem;
+      border:1px solid #d7dbe3;
+      border-radius:10px;
+      background:#fff;
+      cursor:pointer;
+      font-weight:600;
+    }
+
     .pager{display:flex;justify-content:center;gap:.4rem;margin:1.2rem 0 2rem}
     .pager a,.pager span{padding:.5rem .8rem;border:1px solid #d7dbe3;border-radius:12px;background:#fff;text-decoration:none;color:var(--ink)}
     .current{background:var(--ink);color:#fff;border-color:var(--ink)}
@@ -173,17 +215,17 @@ $priceStops = [0,50000,100000,150000,200000,250000,300000,400000,500000,600000,7
 
     <div class="summary">
       <div><?= number_format($total) ?> results</div>
-      <div></div>
+      <div>
+        <a href="favourites.php" class="fav-btn" style="text-decoration:none;display:inline-block;">Favourites</a>
+      </div>
     </div>
-
-
 
     <!-- Results -->
     <section class="results">
       <?php if (!$rows): ?>
         <div class="card" style="padding:1rem">No properties match your search. Try changing price or location.</div>
       <?php else: foreach ($rows as $r):
-        $img  = $r['main_image'] ?: 'assets/placeholder.jpg'; // ensure this file exists
+        $img  = $r['main_image'] ?: 'assets/placeholder.jpg';
         $addr = trim(
           ($r['location'] ? $r['location'] . ', ' : '') .
           ($r['city'] ?: '') .
@@ -194,6 +236,7 @@ $priceStops = [0,50000,100000,150000,200000,250000,300000,400000,500000,600000,7
         <a class="thumb" href="property.php?id=<?= (int)$r['id'] ?>">
           <img src="<?= h($img) ?>" alt="<?= h($r['title']) ?>">
         </a>
+
         <div class="content">
           <div class="pill"><?= h($r['property_type_name']) ?></div>
           <h3 class="title">
@@ -202,15 +245,19 @@ $priceStops = [0,50000,100000,150000,200000,250000,300000,400000,500000,600000,7
             </a>
           </h3>
           <div class="line"><?= h($addr) ?></div>
+
           <div class="meta">
-            <span> <?= h($r['bedrooms']) ?> bed</span>
-            <span> <?= h($r['bathrooms']) ?> bath</span>
-            <?php if (!is_null($r['area_sqft'])): ?><span> <?= (int)$r['area_sqft'] ?> sqft</span><?php endif; ?>
-            <?php if (!is_null($r['garden_sqft'])): ?><span> <?= (int)$r['garden_sqft'] ?> sqft garden</span><?php endif; ?>
-            <?php if (!is_null($r['garage'])): ?><span> Garage: <?= (int)$r['garage'] ?></span><?php endif; ?>
+            <span><?= h($r['bedrooms']) ?> bed</span>
+            <span><?= h($r['bathrooms']) ?> bath</span>
+            <?php if (!is_null($r['area_sqft'])): ?><span><?= (int)$r['area_sqft'] ?> sqft</span><?php endif; ?>
+            <?php if (!is_null($r['garden_sqft'])): ?><span><?= (int)$r['garden_sqft'] ?> sqft garden</span><?php endif; ?>
+            <?php if (!is_null($r['garage'])): ?><span>Garage: <?= (int)$r['garage'] ?></span><?php endif; ?>
           </div>
+
           <div class="price"><?= moneyx($r['price']) ?></div>
           <div class="line"><?= h(mb_strimwidth($r['description'] ?? '', 0, 220, '…', 'UTF-8')) ?></div>
+
+          <!-- ✅ CHANGED: Status left + Favourite button right -->
           <div class="agent">
             <div>
               Status: <?= h($r['status']) ?>
@@ -218,6 +265,11 @@ $priceStops = [0,50000,100000,150000,200000,250000,300000,400000,500000,600000,7
                 · Added on <?= h(date('d/m/Y', strtotime($r['date_listed']))) ?>
               <?php endif; ?>
             </div>
+
+            <form method="post" style="margin:0;">
+              <input type="hidden" name="fav_property_id" value="<?= (int)$r['id'] ?>">
+              <button class="fav-btn" type="submit">Favourite</button>
+            </form>
           </div>
         </div>
       </article>
