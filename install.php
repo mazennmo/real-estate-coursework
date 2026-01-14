@@ -48,7 +48,6 @@ try {
 
     /* ============================ PROPERTIES ============================ */
 
-    // Create properties with a direct property_type_name column 
     $conn->exec("
         CREATE TABLE IF NOT EXISTS properties (
             property_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -71,6 +70,16 @@ try {
             garage INT NULL
         )
     ");
+    // Safely add seller_id column (ignore if it already exists)
+try {
+    $conn->exec("
+        ALTER TABLE properties
+        ADD seller_id INT NOT NULL
+    ");
+} catch (PDOException $e) {
+    // Do nothing – column already exists
+}
+
 
 
     /* ============================= FEATURES ============================= */

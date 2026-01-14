@@ -1,13 +1,11 @@
 <?php
-// listings.php — corrected to your schema + Favourite button -> favourites.php
+session_start();
 
-session_start(); // ✅ ADDED (needed to know which user is favouriting)
-
-// -------- DB CONNECTION (XAMPP defaults) --------
 $host = 'localhost';
 $db   = 'realestate';
 $user = 'root';
 $pass = 'root';
+
 try {
   $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass, [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
@@ -16,14 +14,8 @@ try {
   die('Database connection failed: ' . htmlspecialchars($e->getMessage()));
 }
 
-/* ===========================================================
-   ✅ ADDED: Handle Favourite button click
-   Adds (buyer_id, property_id) into favourites table
-   Then redirects to favourites.php
-   =========================================================== */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fav_property_id'])) {
 
-  // Must be logged in
   if (!isset($_SESSION['user_id'])) {
     header("Location: signin.php");
     exit;
@@ -41,22 +33,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fav_property_id'])) {
     ':pid' => $propertyId
   ]);
 
-  header("Location: favourites.php");
+
+  $qs = $_GET;
+  $qs['fav'] = 'added';
+  header("Location: listings.php?" . http_build_query($qs));
   exit;
 }
-/* ========================= END ADDED PART ========================= */
 
-
-// -------- INPUTS (GET) --------
-$location = trim($_GET['location'] ?? ''); // matches location/city/postcode
-$keyword  = trim($_GET['q'] ?? '');        // title/description
+// -------- SEARCH INPUTS (GET) --------
+$location = trim($_GET['location'] ?? '');
+$keyword  = trim($_GET['q'] ?? '');
 $min      = $_GET['min_price'] ?? '';
 $max      = $_GET['max_price'] ?? '';
-$sort     = $_GET['sort'] ?? 'price_desc'; // price_desc | price_asc | recent
+$sort     = $_GET['sort'] ?? 'price_desc';
 $page     = max(1, (int)($_GET['page'] ?? 1));
 $perPage  = 10;
 $offset   = ($page - 1) * $perPage;
 
+// -------- BUILD SEARCH FILTERS --------
 $where  = [];
 $params = [];
 
@@ -68,8 +62,14 @@ if ($keyword !== '') {
   $where[] = "(title LIKE :kw OR description LIKE :kw)";
   $params[':kw'] = "%{$keyword}%";
 }
-if ($min !== '' && is_numeric($min)) { $where[] = "price >= :minp"; $params[':minp'] = (int)$min; }
-if ($max !== '' && is_numeric($max)) { $where[] = "price <= :maxp"; $params[':maxp'] = (int)$max; }
+if ($min !== '' && is_numeric($min)) {
+  $where[] = "price >= :minp";
+  $params[':minp'] = (int)$min;
+}
+if ($max !== '' && is_numeric($max)) {
+  $where[] = "price <= :maxp";
+  $params[':maxp'] = (int)$max;
+}
 
 $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
@@ -77,7 +77,7 @@ $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 switch ($sort) {
   case 'price_asc':  $orderSql = "ORDER BY price ASC, date_listed DESC"; break;
   case 'recent':     $orderSql = "ORDER BY date_listed DESC"; break;
-  default:           $orderSql = "ORDER BY price DESC, date_listed DESC"; // price_desc
+  default:           $orderSql = "ORDER BY price DESC, date_listed DESC";
 }
 
 // -------- COUNT --------
@@ -87,13 +87,13 @@ $stmt->execute($params);
 $total = (int)$stmt->fetchColumn();
 $totalPages = max(1, (int)ceil($total / $perPage));
 
-// -------- FETCH (NO address; uses location/city/postcode) --------
+// -------- FETCH --------
 $sql = "
   SELECT
     p.property_id AS id,
     p.property_type_name,
     p.title,
-    p.description,
+    p.description, 
     p.price,
     p.location,
     p.city,
@@ -117,6 +117,7 @@ $sql = "
   {$orderSql}
   LIMIT :limit OFFSET :offset
 ";
+
 $stmt = $pdo->prepare($sql);
 foreach ($params as $k=>$v) $stmt->bindValue($k, $v);
 $stmt->bindValue(':limit',  $perPage, PDO::PARAM_INT);
@@ -124,9 +125,9 @@ $stmt->bindValue(':offset', $offset,  PDO::PARAM_INT);
 $stmt->execute();
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// -------- HELPERS --------
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 function moneyx($n){ return is_numeric($n) ? '£' . number_format((float)$n) : h($n); }
+
 $priceStops = [0,50000,100000,150000,200000,250000,300000,400000,500000,600000,750000,1000000,1500000,2000000];
 ?>
 <!doctype html>
@@ -145,9 +146,6 @@ $priceStops = [0,50000,100000,150000,200000,250000,300000,400000,500000,600000,7
     .bar button{background:var(--brand);color:#fff;border-color:var(--brand);cursor:pointer}
     .crumbs{font-size:.9rem;color:var(--muted);margin:.4rem 0 .8rem}
     .summary{display:flex;justify-content:space-between;align-items:center;margin:.4rem 0 1rem;color:var(--muted)}
-    .panel{background:var(--white);border:1px solid #e6e9ef;border-radius:14px;padding:.7rem .9rem;margin-bottom:.8rem;display:flex;gap:1rem;align-items:center}
-    .panel .left{display:flex;gap:.9rem;align-items:center}
-    .panel .right{margin-left:auto}
     .results{display:grid;grid-template-columns:1fr;gap:.8rem;margin-bottom:1.2rem}
     .card{display:grid;grid-template-columns:320px 1fr;gap:1rem;background:var(--white);border:1px solid #e6e9ef;border-radius:14px;overflow:hidden}
     .thumb{background:#e8ebf3;aspect-ratio:4/3}
@@ -159,28 +157,18 @@ $priceStops = [0,50000,100000,150000,200000,250000,300000,400000,500000,600000,7
     .price{font-size:1.25rem;font-weight:800;margin:.5rem 0}
     .meta{display:flex;gap:1rem;color:var(--muted);font-size:.95rem;margin-bottom:.4rem}
     .agent{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #eef1f6;padding-top:.7rem;color:var(--muted);font-size:.93rem}
-
-    /* ✅ ADDED: style the favourite button */
-    .fav-btn{
-      padding:.45rem .7rem;
-      border:1px solid #d7dbe3;
-      border-radius:10px;
-      background:#fff;
-      cursor:pointer;
-      font-weight:600;
-    }
-
+    .fav-btn{padding:.45rem .7rem;border:1px solid #d7dbe3;border-radius:10px;background:#fff;cursor:pointer;font-weight:600;}
+    .ok{background:#e8f5e9;border:1px solid #a5d6a7;color:#2e7d32;padding:10px 12px;border-radius:10px;margin:0 0 12px}
     .pager{display:flex;justify-content:center;gap:.4rem;margin:1.2rem 0 2rem}
     .pager a,.pager span{padding:.5rem .8rem;border:1px solid #d7dbe3;border-radius:12px;background:#fff;text-decoration:none;color:var(--ink)}
     .current{background:var(--ink);color:#fff;border-color:var(--ink)}
     @media(max-width:980px){.bar{grid-template-columns:1fr 1fr 1fr 1fr auto}.card{grid-template-columns:1fr}}
-    @media(max-width:640px){.bar{grid-template-columns:1fr 1fr;grid-auto-rows:auto}.bar .wide{grid-column:1/-1}.panel{flex-direction:column;align-items:flex-start}}
+    @media(max-width:640px){.bar{grid-template-columns:1fr 1fr;grid-auto-rows:auto}.bar .wide{grid-column:1/-1}}
   </style>
 </head>
 <body>
   <header>
     <div class="wrap" style="padding-top:.6rem;padding-bottom:.6rem">
-      <!-- Top search bar -->
       <form class="bar" method="get" action="listings.php">
         <input class="wide" type="text" name="location" placeholder="Search location (e.g. London, Peterborough)"
                value="<?=h($location)?>">
@@ -209,18 +197,19 @@ $priceStops = [0,50000,100000,150000,200000,250000,300000,400000,500000,600000,7
 
   <div class="wrap">
     <div class="crumbs">
-      Properties <?= $location? 'for sale in ' . h($location) : 'for sale' ?>
+      Properties <?= $location ? 'in ' . h($location) : '' ?>
       <?php if ($keyword): ?> › “<?=h($keyword)?>”<?php endif; ?>
     </div>
 
+    <?php if (isset($_GET['fav']) && $_GET['fav']==='added'): ?>
+      <div class="ok">Added to favourites </div>
+    <?php endif; ?>
+
     <div class="summary">
       <div><?= number_format($total) ?> results</div>
-      <div>
-        <a href="favourites.php" class="fav-btn" style="text-decoration:none;display:inline-block;">Favourites</a>
-      </div>
+      <div></div>
     </div>
 
-    <!-- Results -->
     <section class="results">
       <?php if (!$rows): ?>
         <div class="card" style="padding:1rem">No properties match your search. Try changing price or location.</div>
@@ -236,7 +225,6 @@ $priceStops = [0,50000,100000,150000,200000,250000,300000,400000,500000,600000,7
         <a class="thumb" href="property.php?id=<?= (int)$r['id'] ?>">
           <img src="<?= h($img) ?>" alt="<?= h($r['title']) ?>">
         </a>
-
         <div class="content">
           <div class="pill"><?= h($r['property_type_name']) ?></div>
           <h3 class="title">
@@ -245,7 +233,6 @@ $priceStops = [0,50000,100000,150000,200000,250000,300000,400000,500000,600000,7
             </a>
           </h3>
           <div class="line"><?= h($addr) ?></div>
-
           <div class="meta">
             <span><?= h($r['bedrooms']) ?> bed</span>
             <span><?= h($r['bathrooms']) ?> bath</span>
@@ -253,11 +240,9 @@ $priceStops = [0,50000,100000,150000,200000,250000,300000,400000,500000,600000,7
             <?php if (!is_null($r['garden_sqft'])): ?><span><?= (int)$r['garden_sqft'] ?> sqft garden</span><?php endif; ?>
             <?php if (!is_null($r['garage'])): ?><span>Garage: <?= (int)$r['garage'] ?></span><?php endif; ?>
           </div>
-
           <div class="price"><?= moneyx($r['price']) ?></div>
           <div class="line"><?= h(mb_strimwidth($r['description'] ?? '', 0, 220, '…', 'UTF-8')) ?></div>
 
-          <!-- ✅ CHANGED: Status left + Favourite button right -->
           <div class="agent">
             <div>
               Status: <?= h($r['status']) ?>
@@ -276,7 +261,6 @@ $priceStops = [0,50000,100000,150000,200000,250000,300000,400000,500000,600000,7
       <?php endforeach; endif; ?>
     </section>
 
-    <!-- Pagination -->
     <nav class="pager" aria-label="Pagination">
       <?php
         $qs = $_GET; unset($qs['page']);

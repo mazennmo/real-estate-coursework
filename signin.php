@@ -132,3 +132,15 @@ function err($k,$errors){ return isset($errors[$k]) ? '<div class="error">'.$err
 </main>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
