@@ -22,6 +22,7 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 /* -------------------------
    Sellers = users who have listings
    + rating breakdown
+   FIX: prevent duplicated reviews caused by JOIN properties
 ------------------------- */
 $sql = "
 SELECT
@@ -29,14 +30,14 @@ SELECT
     users.firstname,
     users.lastname,
 
-    COUNT(reviews.reviewID) AS total_reviews,
-    ROUND(AVG(reviews.rating), 1) AS avg_rating,
+    COUNT(DISTINCT reviews.reviewID) AS total_reviews,
+    ROUND(AVG(DISTINCT reviews.rating), 1) AS avg_rating,
 
-    SUM(reviews.rating = 5) AS count_5,
-    SUM(reviews.rating = 4) AS count_4,
-    SUM(reviews.rating = 3) AS count_3,
-    SUM(reviews.rating = 2) AS count_2,
-    SUM(reviews.rating = 1) AS count_1
+    COUNT(DISTINCT CASE WHEN reviews.rating = 5 THEN reviews.reviewID END) AS count_5,
+    COUNT(DISTINCT CASE WHEN reviews.rating = 4 THEN reviews.reviewID END) AS count_4,
+    COUNT(DISTINCT CASE WHEN reviews.rating = 3 THEN reviews.reviewID END) AS count_3,
+    COUNT(DISTINCT CASE WHEN reviews.rating = 2 THEN reviews.reviewID END) AS count_2,
+    COUNT(DISTINCT CASE WHEN reviews.rating = 1 THEN reviews.reviewID END) AS count_1
 
 FROM users
 JOIN properties ON properties.seller_id = users.user_id
@@ -152,7 +153,6 @@ foreach ($rows as $r) {
             <?php endif; ?>
           </div>
         </div>
-
 
     <?php endforeach; ?>
   <?php endif; ?>

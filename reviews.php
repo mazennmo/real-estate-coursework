@@ -37,7 +37,7 @@ if ($propertyId > 0) {
 }
 
 if ($sellerId <= 0) die("Invalid seller.");
-if ($sellerId === $buyerId) die("You cannot review yourself.");
+
 
 /* Seller name */
 $stmt = $pdo->prepare("SELECT firstname, lastname FROM users WHERE user_id = :sid LIMIT 1");
@@ -51,7 +51,6 @@ $stmt = $pdo->prepare("
     SELECT reviewID, rating, comment
     FROM reviews
     WHERE buyer_id = :bid AND seller_id = :sid
-    ORDER BY timestamp DESC
     LIMIT 1
 ");
 $stmt->execute([':bid' => $buyerId, ':sid' => $sellerId]);
