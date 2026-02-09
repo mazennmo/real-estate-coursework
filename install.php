@@ -14,7 +14,7 @@ try {
     $conn->exec("CREATE DATABASE IF NOT EXISTS `$dbname` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
     $conn->exec("USE `$dbname`");
 
-    /* =========================== USERS / ROLES =========================== */
+    /* USERS TABLE */
     $conn->exec("
         CREATE TABLE IF NOT EXISTS users (
             user_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -27,13 +27,15 @@ try {
             address VARCHAR(50)
         )
     ");
-
+    /* ROLES TABLE */
     $conn->exec("
         CREATE TABLE IF NOT EXISTS roles (
             roleID INT AUTO_INCREMENT PRIMARY KEY,
             roleName ENUM('Buyer','Seller') NOT NULL UNIQUE
         )
     ");
+
+
     $conn->exec("INSERT IGNORE INTO roles (roleID, roleName) VALUES (1,'Buyer'),(2,'Seller')");
 
     $conn->exec("
@@ -46,8 +48,7 @@ try {
         )
     ");
 
-    /* ============================ PROPERTIES ============================ */
-
+    /*  PROPERTIES TABLE */
     $conn->exec("
         CREATE TABLE IF NOT EXISTS properties (
             property_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -70,6 +71,9 @@ try {
             garage INT NULL
         )
     ");
+
+
+
     // Safely add seller_id column (ignore if it already exists)
 try {
     $conn->exec("
@@ -82,7 +86,7 @@ try {
 
 
 
-    /* ============================= FEATURES ============================= */
+    /*  FEATURES TABLE */
     $conn->exec("
         CREATE TABLE IF NOT EXISTS features (
             featureID INT AUTO_INCREMENT PRIMARY KEY,
@@ -100,7 +104,7 @@ try {
         )
     ");
 
-    /* =========================== PROPERTY IMAGES ======================== */
+    /*  PROPERTY IMAGES TABLE */
     $conn->exec("
         CREATE TABLE IF NOT EXISTS property_images (
             image_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -126,7 +130,7 @@ try {
         )
     ");
 
-    /* =============================== FAVOURITES ========================= */
+    /*  FAVOURITES TABLE */
     $conn->exec("
         CREATE TABLE IF NOT EXISTS favourites (
             buyer_id INT NOT NULL,
@@ -137,7 +141,7 @@ try {
         )
     ");
 
-    /* ================================ REVIEWS =========================== */
+    /*  REVIEWS TABLE */
     $conn->exec("
         CREATE TABLE IF NOT EXISTS reviews (
             reviewID INT AUTO_INCREMENT PRIMARY KEY,
