@@ -3,7 +3,7 @@
 session_start();
 
 // Decide where the Sell button should go
-$sellUrl = isset($_SESSION['user_id']) ? 'propertylist.php' : 'signin.php';
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
