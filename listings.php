@@ -1,280 +1,394 @@
 <?php
 session_start();
 
-$host = 'localhost';
-$db   = 'realestate';
-$user = 'root';
-$pass = 'root';
+// Database connection
+$dsn  = "mysql:host=localhost;dbname=realestate;charset=utf8mb4";
+$user = "root";
+$pass = "root";
 
-try {
-  $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass, [
-    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-  ]);
-} catch (PDOException $e) {
-  die('Database connection failed: ' . htmlspecialchars($e->getMessage()));
+$pdo = new PDO($dsn, $user, $pass);
+
+// Add to favourites (runs when favourite button is clicked)
+if (isset($_POST['favourite_property_id'])) {
+
+    // User must be logged in to favourite
+    if (!isset($_SESSION['user_id'])) {
+        header("Location: signin.php");
+        exit;
+    }
+
+    $buyer_id    = $_SESSION['user_id'];
+    $property_id = (int) $_POST['favourite_property_id'];
+
+    $sqlFav = "INSERT IGNORE INTO favourites (buyer_id, property_id) VALUES (?, ?)";
+    $stmtFav = $pdo->prepare($sqlFav);
+    $stmtFav->execute([$buyer_id, $property_id]);
+
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['fav_property_id'])) {
-
-  if (!isset($_SESSION['user_id'])) {
-    header("Location: signin.php");
-    exit;
-  }
-
-  $buyerId    = (int)$_SESSION['user_id'];
-  $propertyId = (int)$_POST['fav_property_id'];
-
-  $stmtFav = $pdo->prepare("
-    INSERT IGNORE INTO favourites (buyer_id, property_id)
-    VALUES (:bid, :pid)
-  ");
-  $stmtFav->execute([
-    ':bid' => $buyerId,
-    ':pid' => $propertyId
-  ]);
-
-
-  $qs = $_GET;
-  $qs['fav'] = 'added';
-  header("Location: listings.php?" . http_build_query($qs));
-  exit;
+// Search value (from the form)
+$search = "";
+if (isset($_GET['search'])) {
+    $search = $_GET['search'];
 }
 
-// -------- SEARCH INPUTS (GET) --------
-$location = trim($_GET['location'] ?? '');
-$keyword  = trim($_GET['q'] ?? '');
-$min      = $_GET['min_price'] ?? '';
-$max      = $_GET['max_price'] ?? '';
-$sort     = $_GET['sort'] ?? 'price_desc';
-$page     = max(1, (int)($_GET['page'] ?? 1));
-$perPage  = 10;
-$offset   = ($page - 1) * $perPage;
+// Sort value (from the form)
+$sort = "";
+if (isset($_GET['sort'])) {
+    $sort = $_GET['sort'];
+}
 
-// -------- BUILD SEARCH FILTERS --------
-$where  = [];
+// Min / Max price (from the form)
+$min_price = "";
+if (isset($_GET['min_price'])) {
+    $min_price = $_GET['min_price'];
+}
+
+$max_price = "";
+if (isset($_GET['max_price'])) {
+    $max_price = $_GET['max_price'];
+}
+
+$sql = "SELECT * FROM properties";
+$where = [];
 $params = [];
 
-if ($location !== '') {
-  $where[] = "(city LIKE :loc OR postcode LIKE :loc OR location LIKE :loc)";
-  $params[':loc'] = "%{$location}%";
-}
-if ($keyword !== '') {
-  $where[] = "(title LIKE :kw OR description LIKE :kw)";
-  $params[':kw'] = "%{$keyword}%";
-}
-if ($min !== '' && is_numeric($min)) {
-  $where[] = "price >= :minp";
-  $params[':minp'] = (int)$min;
-}
-if ($max !== '' && is_numeric($max)) {
-  $where[] = "price <= :maxp";
-  $params[':maxp'] = (int)$max;
+// Search filter
+if ($search != "") {
+    $where[] = "(location LIKE ? OR city LIKE ? OR postcode LIKE ?)";
+    $params[] = "%$search%";
+    $params[] = "%$search%";
+    $params[] = "%$search%";
 }
 
-$whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-
-// -------- SORT --------
-switch ($sort) {
-  case 'price_asc':  $orderSql = "ORDER BY price ASC, date_listed DESC"; break;
-  case 'recent':     $orderSql = "ORDER BY date_listed DESC"; break;
-  default:           $orderSql = "ORDER BY price DESC, date_listed DESC";
+// Min price filter
+if ($min_price != "") {
+    $where[] = "price >= ?";
+    $params[] = $min_price;
 }
 
-// -------- COUNT --------
-$sqlCount = "SELECT COUNT(*) FROM properties {$whereSql}";
-$stmt = $pdo->prepare($sqlCount);
-$stmt->execute($params);
-$total = (int)$stmt->fetchColumn();
-$totalPages = max(1, (int)ceil($total / $perPage));
+// Max price filter
+if ($max_price != "") {
+    $where[] = "price <= ?";
+    $params[] = $max_price;
+}
 
-// -------- FETCH --------
-$sql = "
-  SELECT
-    p.property_id AS id,
-    p.property_type_name,
-    p.title,
-    p.description, 
-    p.price,
-    p.location,
-    p.city,
-    p.postcode,
-    p.date_listed,
-    p.status,
-    p.bedrooms,
-    p.bathrooms,
-    p.area_sqft,
-    p.garden_sqft,
-    p.garage,
-    (
-      SELECT pi.image_url
-      FROM property_images pi
-      WHERE pi.property_id = p.property_id
-      ORDER BY pi.image_id ASC
-      LIMIT 1
-    ) AS main_image
-  FROM properties p
-  {$whereSql}
-  {$orderSql}
-  LIMIT :limit OFFSET :offset
-";
+// Combine WHERE conditions
+if (count($where) > 0) {
+    $sql .= " WHERE " . implode(" AND ", $where);
+}
+
+// Sorting
+if ($sort == "high") {
+    $sql .= " ORDER BY price DESC";
+} elseif ($sort == "low") {
+    $sql .= " ORDER BY price ASC";
+} else {
+    $sql .= " ORDER BY property_id DESC";
+}
 
 $stmt = $pdo->prepare($sql);
-foreach ($params as $k=>$v) $stmt->bindValue($k, $v);
-$stmt->bindValue(':limit',  $perPage, PDO::PARAM_INT);
-$stmt->bindValue(':offset', $offset,  PDO::PARAM_INT);
-$stmt->execute();
-$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
-function moneyx($n){ return is_numeric($n) ? '£' . number_format((float)$n) : h($n); }
-
-$priceStops = [0,50000,100000,150000,200000,250000,300000,400000,500000,600000,750000,1000000,1500000,2000000];
+$stmt->execute($params);
+$properties = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
-<!doctype html>
-<html lang="en">
+
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8">
-  <title>Browse Listings</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    :root { --bg:#f2f4f7; --white:#fff; --ink:#0b1320; --muted:#5f6b7a; --brand:#0a63ff; --pill:#e9eef8; }
-    *{box-sizing:border-box} body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
-    .wrap{max-width:1100px;margin:0 auto;padding:0 1rem}
-    header{background:var(--white);border-bottom:1px solid #e6e9ef;position:sticky;top:0;z-index:10}
-    .bar{display:grid;grid-template-columns:1.2fr .9fr .9fr .9fr auto;gap:.5rem;padding:.8rem 0}
-    .bar input,.bar select,.bar button{padding:.7rem .8rem;border:1px solid #d7dbe3;border-radius:12px;font-size:.95rem;background:#fff}
-    .bar button{background:var(--brand);color:#fff;border-color:var(--brand);cursor:pointer}
-    .crumbs{font-size:.9rem;color:var(--muted);margin:.4rem 0 .8rem}
-    .summary{display:flex;justify-content:space-between;align-items:center;margin:.4rem 0 1rem;color:var(--muted)}
-    .results{display:grid;grid-template-columns:1fr;gap:.8rem;margin-bottom:1.2rem}
-    .card{display:grid;grid-template-columns:320px 1fr;gap:1rem;background:var(--white);border:1px solid #e6e9ef;border-radius:14px;overflow:hidden}
-    .thumb{background:#e8ebf3;aspect-ratio:4/3}
-    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-    .content{padding:.9rem}
-    .title{font-weight:700;margin:.1rem 0 .4rem}
-    .line{color:var(--muted);font-size:.95rem;margin-bottom:.5rem}
-    .pill{display:inline-block;background:var(--pill);padding:.25rem .5rem;border-radius:999px;font-size:.85rem;margin-right:.35rem}
-    .price{font-size:1.25rem;font-weight:800;margin:.5rem 0}
-    .meta{display:flex;gap:1rem;color:var(--muted);font-size:.95rem;margin-bottom:.4rem}
-    .agent{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #eef1f6;padding-top:.7rem;color:var(--muted);font-size:.93rem}
-    .fav-btn{padding:.45rem .7rem;border:1px solid #d7dbe3;border-radius:10px;background:#fff;cursor:pointer;font-weight:600;}
-    .ok{background:#e8f5e9;border:1px solid #a5d6a7;color:#2e7d32;padding:10px 12px;border-radius:10px;margin:0 0 12px}
-    .pager{display:flex;justify-content:center;gap:.4rem;margin:1.2rem 0 2rem}
-    .pager a,.pager span{padding:.5rem .8rem;border:1px solid #d7dbe3;border-radius:12px;background:#fff;text-decoration:none;color:var(--ink)}
-    .current{background:var(--ink);color:#fff;border-color:var(--ink)}
-    @media(max-width:980px){.bar{grid-template-columns:1fr 1fr 1fr 1fr auto}.card{grid-template-columns:1fr}}
-    @media(max-width:640px){.bar{grid-template-columns:1fr 1fr;grid-auto-rows:auto}.bar .wide{grid-column:1/-1}}
-  </style>
+
+    <style>
+        :root{
+            --bg:#f3f6fb;
+            --card:#ffffff;
+            --text:#0f172a;
+            --muted:#64748b;
+            --line:#e5e7eb;
+            --blue:#2563eb;
+            --blue2:#1d4ed8;
+            --radius:16px;
+        }
+
+        *{ box-sizing:border-box; }
+        body{
+            margin:0;
+            font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+            background:var(--bg);
+            color:var(--text);
+        }
+
+        /* Full-width container (so sides aren't empty) */
+        .wrap{
+            width:100%;
+            max-width:none;
+            margin:0;
+            padding:18px 28px 40px;
+        }
+
+        /* Top bar */
+        .topbar{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:12px;
+            margin-bottom:14px;
+        }
+
+        h1{
+            margin:0;
+            font-size:22px;
+            font-weight:800;
+        }
+
+        .auth-links{
+            display:flex;
+            gap:10px;
+            align-items:center;
+        }
+
+        .auth-links a{
+            color:var(--blue);
+            text-decoration:none;
+            font-weight:700;
+            padding:10px 14px;
+            border-radius:999px;
+            background:#ffffff;
+            border:1px solid var(--line);
+        }
+        .auth-links a:hover{
+            background:#eaf1ff;
+            border-color:#cfe0ff;
+        }
+
+        /* search bar row */
+        form.search-form{
+            display:flex;
+            gap:10px;
+            align-items:center;
+            flex-wrap:wrap;
+            margin-bottom:14px;
+        }
+
+        .search-bar{
+            width:360px;
+            font-size:14px;
+            padding:12px 14px;
+            border:1px solid var(--line);
+            border-radius:999px;
+            outline:none;
+            background:#fff;
+        }
+
+        input[type="number"], select{
+            padding:12px 12px;
+            border:1px solid var(--line);
+            border-radius:999px;
+            outline:none;
+            background:#fff;
+            font-size:14px;
+            min-width:150px;
+        }
+
+        button{
+            padding:12px 16px;
+            border:none;
+            border-radius:999px;
+            background:var(--blue);
+            color:#fff;
+            font-weight:800;
+            cursor:pointer;
+        }
+        button:hover{ background:var(--blue2); }
+
+        hr{
+            border:none;
+            border-top:1px solid var(--line);
+            margin:14px 0 18px;
+        }
+
+        /* property cards */
+        .property-box{
+            background:var(--card);
+            border:1px solid var(--line);
+            border-radius:20px;
+            padding:16px;
+            margin-bottom:18px;
+            box-shadow:0 8px 20px rgba(15, 23, 42, 0.06);
+        }
+
+        .row{
+            display:flex;
+            gap:18px;
+            align-items:stretch;
+        }
+
+        .row img{
+            width:360px;
+            height:210px;
+            object-fit:cover;
+            border-radius:16px;
+            background:#e9eef7;
+            display:block;
+        }
+
+        .details{
+            flex:1;
+            display:flex;
+            flex-direction:column;
+            gap:8px;
+        }
+
+        .details h3{
+            margin:0;
+            font-size:20px;
+            font-weight:900;
+        }
+
+        .details p{
+            margin:0;
+            color:var(--muted);
+            line-height:1.35;
+            font-size:14px;
+        }
+
+        .details p strong{
+            color:var(--text);
+        }
+
+        .details p.price{
+            color:var(--text);
+            font-size:22px;
+            font-weight:900;
+            margin-top:2px;
+        }
+
+        /* bed/bath row */
+        .meta{
+            display:flex;
+            gap:14px;
+            flex-wrap:wrap;
+            color:var(--muted);
+            font-size:14px;
+        }
+
+        /* favourite button aligned right */
+        .details form.fav-form{
+            margin-top:auto;
+            display:flex;
+            justify-content:flex-end;
+        }
+
+        .details form.fav-form button{
+            background:#ffffff;
+            color:var(--text);
+            border:1px solid var(--line);
+            padding:10px 14px;
+            font-weight:800;
+        }
+        .details form.fav-form button:hover{
+            background:#f8fafc;
+        }
+
+        /* responsive */
+        @media (max-width:860px){
+            .wrap{ padding:16px; }
+            .row{ flex-direction:column; }
+            .row img{ width:100%; height:240px; }
+            .search-bar{ width:100%; }
+            input[type="number"], select{ flex:1; min-width:150px; }
+            .topbar{ flex-direction:column; align-items:flex-start; }
+            .auth-links{ width:100%; justify-content:flex-end; }
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <div class="wrap" style="padding-top:.6rem;padding-bottom:.6rem">
-      <form class="bar" method="get" action="listings.php">
-        <input class="wide" type="text" name="location" placeholder="Search location (e.g. London, Peterborough)"
-               value="<?=h($location)?>">
-        <select name="min_price" aria-label="Min Price">
-          <option value="">Min Price</option>
-          <?php foreach ($priceStops as $p): ?>
-            <option value="<?=$p?>" <?=($min!=='' && (int)$min===$p)?'selected':''?>><?= $p? '£'.number_format($p) : 'No min' ?></option>
-          <?php endforeach; ?>
+
+<div class="wrap">
+
+    <div class="topbar">
+        <h1>Browse Listings</h1>
+        <div class="auth-links">
+            <a href="register.php">Register</a>
+            <a href="signin.php">Sign In</a>
+        </div>
+    </div>
+
+    <form method="get" action="listings.php" class="search-form">
+        <input type="text" name="search" placeholder="Search" value="<?php echo $search; ?>" class="search-bar">
+
+        <input type="number" name="min_price" placeholder="Min £" value="<?php echo $min_price; ?>">
+        <input type="number" name="max_price" placeholder="Max £" value="<?php echo $max_price; ?>">
+
+        <select name="sort">
+            <option value="">Sort by</option>
+            <option value="high" <?php if($sort=="high") echo "selected"; ?>>Highest Price</option>
+            <option value="low" <?php if($sort=="low") echo "selected"; ?>>Lowest Price</option>
         </select>
-        <select name="max_price" aria-label="Max Price">
-          <option value="">Max Price</option>
-          <?php foreach ($priceStops as $p): ?>
-            <option value="<?=$p?>" <?=($max!=='' && (int)$max===$p)?'selected':''?>><?= $p? '£'.number_format($p) : 'No max' ?></option>
-          <?php endforeach; ?>
-        </select>
-        <select name="sort" aria-label="Sort">
-          <option value="price_desc" <?= $sort==='price_desc'?'selected':'' ?>>Highest Price</option>
-          <option value="price_asc"  <?= $sort==='price_asc'?'selected':''  ?>>Lowest Price</option>
-          <option value="recent"     <?= $sort==='recent'?'selected':''     ?>>Most Recent</option>
-        </select>
+
         <button type="submit">Search</button>
-        <input type="hidden" name="q" value="<?=h($keyword)?>">
-      </form>
-    </div>
-  </header>
+    </form>
 
-  <div class="wrap">
-    <div class="crumbs">
-      Properties <?= $location ? 'in ' . h($location) : '' ?>
-      <?php if ($keyword): ?> › “<?=h($keyword)?>”<?php endif; ?>
-    </div>
+    <hr>
 
-    <?php if (isset($_GET['fav']) && $_GET['fav']==='added'): ?>
-      <div class="ok">Added to favourites </div>
+    <?php if (count($properties) == 0): ?>
+        <p>No properties found.</p>
     <?php endif; ?>
 
-    <div class="summary">
-      <div><?= number_format($total) ?> results</div>
-      <div></div>
-    </div>
+    <?php foreach ($properties as $p): ?>
 
-    <section class="results">
-      <?php if (!$rows): ?>
-        <div class="card" style="padding:1rem">No properties match your search. Try changing price or location.</div>
-      <?php else: foreach ($rows as $r):
-        $img  = $r['main_image'] ?: 'assets/placeholder.jpg';
-        $addr = trim(
-          ($r['location'] ? $r['location'] . ', ' : '') .
-          ($r['city'] ?: '') .
-          ($r['postcode'] ? ', ' . $r['postcode'] : '')
-        );
-      ?>
-      <article class="card">
-        <a class="thumb" href="property.php?id=<?= (int)$r['id'] ?>">
-          <img src="<?= h($img) ?>" alt="<?= h($r['title']) ?>">
-        </a>
-        <div class="content">
-          <div class="pill"><?= h($r['property_type_name']) ?></div>
-          <h3 class="title">
-            <a href="property.php?id=<?= (int)$r['id'] ?>" style="text-decoration:none;color:inherit">
-              <?= h($r['title']) ?>
-            </a>
-          </h3>
-          <div class="line"><?= h($addr) ?></div>
-          <div class="meta">
-            <span><?= h($r['bedrooms']) ?> bed</span>
-            <span><?= h($r['bathrooms']) ?> bath</span>
-            <?php if (!is_null($r['area_sqft'])): ?><span><?= (int)$r['area_sqft'] ?> sqft</span><?php endif; ?>
-            <?php if (!is_null($r['garden_sqft'])): ?><span><?= (int)$r['garden_sqft'] ?> sqft garden</span><?php endif; ?>
-            <?php if (!is_null($r['garage'])): ?><span>Garage: <?= (int)$r['garage'] ?></span><?php endif; ?>
-          </div>
-          <div class="price"><?= moneyx($r['price']) ?></div>
-          <div class="line"><?= h(mb_strimwidth($r['description'] ?? '', 0, 220, '…', 'UTF-8')) ?></div>
+        <?php
+        // Get the first image for this property
+        $sqlImg = "SELECT image_url FROM property_images WHERE property_id = ? LIMIT 1";
+        $stmtImg = $pdo->prepare($sqlImg);
+        $stmtImg->execute([$p['property_id']]);
+        $image = $stmtImg->fetchColumn();
+        ?>
 
-          <div class="agent">
-            <div>
-              Status: <?= h($r['status']) ?>
-              <?php if (!empty($r['date_listed'])): ?>
-                · Added on <?= h(date('d/m/Y', strtotime($r['date_listed']))) ?>
-              <?php endif; ?>
+        <div class="property-box">
+
+            <div class="row">
+
+                <?php if (!empty($p['main_image'])): ?>
+                    <img src="<?php echo $p['main_image']; ?>" width="300">
+                <?php else: ?>
+                    <?php if ($image): ?>
+                        <img src="<?php echo $image; ?>" width="300">
+                    <?php else: ?>
+                        <p>(No image)</p>
+                    <?php endif; ?>
+                <?php endif; ?>
+
+                <div class="details">
+                    <h3><?php echo $p['title']; ?></h3>
+
+                    <div class="meta">
+                        <span><strong><?php echo $p['bedrooms']; ?></strong> bed</span>
+                        <span><strong><?php echo $p['bathrooms']; ?></strong> bath</span>
+                    </div>
+
+                    <p class="price">£<?php echo $p['price']; ?></p>
+
+                    <p><strong>Status:</strong> <?php echo $p['status']; ?></p>
+
+                    <p><strong>Location:</strong>
+                        <?php echo $p['location']; ?>, <?php echo $p['city']; ?>, <?php echo $p['postcode']; ?>
+                    </p>
+
+                    <p><strong>Description:</strong> <?php echo $p['description']; ?></p>
+
+                    <!-- Favourite button -->
+                    <form method="post" action="listings.php" class="fav-form">
+                        <input type="hidden" name="favourite_property_id" value="<?php echo $p['property_id']; ?>">
+                        <button type="submit">Favourite</button>
+                    </form>
+                </div>
+
             </div>
 
-            <form method="post" style="margin:0;">
-              <input type="hidden" name="fav_property_id" value="<?= (int)$r['id'] ?>">
-              <button class="fav-btn" type="submit">Favourite</button>
-            </form>
-          </div>
         </div>
-      </article>
-      <?php endforeach; endif; ?>
-    </section>
 
-    <nav class="pager" aria-label="Pagination">
-      <?php
-        $qs = $_GET; unset($qs['page']);
-        $base = 'listings.php?' . http_build_query($qs);
-        if ($page > 1) echo '<a href="'.$base.'&page='.($page-1).'">&laquo; Prev</a>';
-        $start = max(1, $page-2);
-        $end   = min($totalPages, $page+2);
-        for ($p=$start; $p<=$end; $p++) {
-          if ($p === $page) echo '<span class="current">'.$p.'</span>';
-          else echo '<a href="'.$base.'&page='.$p.'">'.$p.'</a>';
-        }
-        if ($page < $totalPages) echo '<a href="'.$base.'&page='.($page+1).'">Next &raquo;</a>';
-      ?>
-    </nav>
-  </div>
+    <?php endforeach; ?>
+
+</div>
+
 </body>
 </html>

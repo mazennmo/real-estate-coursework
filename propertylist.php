@@ -41,10 +41,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $seller_id, $property_type, $title, $description, $price,
         $location, $city, $postcode, $status, $bedrooms, $bathrooms
     ]);
-  }
-  $message = "Property listed successfully!";
+}
+$message = "Property listed successfully!";
 
- // After inserting property
+// After inserting property
 $property_id = $pdo->lastInsertId();
 
 if ($_FILES['main_image']['name']) {
@@ -161,7 +161,7 @@ form p:nth-of-type(12){
 }
 
 /* Inputs */
-input, textarea{
+input, textarea, select{
   margin-top:6px;
   width:100%;
   padding:12px;
@@ -260,10 +260,29 @@ button:hover{
             <input type="text" name="title" required></p>
 
             <p>Property Type<br>
-            <input type="text" name="property_type_name" required></p>
+                <select name="property_type_name" required>
+                    <option value="" disabled selected>Select property type</option>
+                    <option value="Detached">Detached</option>
+                    <option value="Semi-detached">Semi-detached</option>
+                    <option value="Terraced">Terraced</option>
+                    <option value="Flat">Flat</option>
+                    <option value="Bungalow">Bungalow</option>
+                    <option value="Cottage">Cottage</option>
+                    <option value="Maisonette">Maisonette</option>
+                    <option value="Studio">Studio</option>
+                    <option value="Farmhouse">Farmhouse</option>
+                    <option value="Mansion">Mansion</option>
+                </select>
+            </p>
 
             <p>Status<br>
-            <input type="text" name="status" required></p>
+            <select name = "status" required>
+                <option value="" disabled selected>Select status</option>
+                <option value="For sale">For sale</option>
+                <option value="Under offer">Under offer</option>
+                <option value="Sold">Sold</option>
+            </select>
+            </p>
 
             <p>Price<br>
             <input type="number" name="price" min = "30000" required></p>

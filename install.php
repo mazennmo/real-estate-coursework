@@ -38,15 +38,6 @@ try {
 
     $conn->exec("INSERT IGNORE INTO roles (roleID, roleName) VALUES (1,'Buyer'),(2,'Seller')");
 
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS user_roles (
-            userID INT NOT NULL,
-            roleID INT NOT NULL,
-            PRIMARY KEY(userID, roleID),
-            FOREIGN KEY(userID) REFERENCES users(user_id) ON DELETE CASCADE,
-            FOREIGN KEY(roleID) REFERENCES roles(roleID) ON DELETE CASCADE
-        )
-    ");
 
     /*  PROPERTIES TABLE */
     $conn->exec("
@@ -64,8 +55,8 @@ try {
             postcode VARCHAR(10) NOT NULL,
             date_listed DATETIME DEFAULT CURRENT_TIMESTAMP,
             status ENUM('Sold','Under offer','For sale') NOT NULL,
-            bedrooms ENUM('1','2','3','4','5','6','7','8','9','10+') NOT NULL,
-            bathrooms ENUM('1','2','3','4','5','6','7','8','9','10+') NOT NULL,
+            bedrooms INT NOT NULL, 
+            bathrooms INT NOT NULL,
             area_sqft INT NULL,
             garden_sqft INT NULL,
             garage INT NULL
@@ -86,24 +77,6 @@ try {
 
 
 
-    /*  FEATURES TABLE */
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS features (
-            featureID INT AUTO_INCREMENT PRIMARY KEY,
-            featureName VARCHAR(80) NOT NULL UNIQUE
-        )
-    ");
-
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS property_features (
-            propertyID INT NOT NULL,
-            featureID INT NOT NULL,
-            PRIMARY KEY(propertyID, featureID),
-            FOREIGN KEY(propertyID) REFERENCES properties(property_id) ON DELETE CASCADE,
-            FOREIGN KEY(featureID) REFERENCES features(featureID) ON DELETE CASCADE
-        )
-    ");
-
     /*  PROPERTY IMAGES TABLE */
     $conn->exec("
         CREATE TABLE IF NOT EXISTS property_images (
@@ -115,20 +88,7 @@ try {
         )
     ");
 
-    /* =============================== MESSAGES =========================== */
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS messages (
-            message_id INT AUTO_INCREMENT PRIMARY KEY,
-            senderID INT NOT NULL,
-            receiverID INT NOT NULL,
-            property_id INT NOT NULL,
-            messages TEXT NOT NULL,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(senderID)   REFERENCES users(user_id) ON DELETE CASCADE,
-            FOREIGN KEY(receiverID) REFERENCES users(user_id) ON DELETE CASCADE,
-            FOREIGN KEY(property_id) REFERENCES properties(property_id) ON DELETE CASCADE
-        )
-    ");
+
 
     /*  FAVOURITES TABLE */
     $conn->exec("
