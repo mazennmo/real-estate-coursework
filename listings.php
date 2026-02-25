@@ -105,7 +105,6 @@ $properties = $stmt->fetchAll(PDO::FETCH_ASSOC);
             --line:#e5e7eb;
             --blue:#2563eb;
             --blue2:#1d4ed8;
-            --radius:16px;
         }
 
         *{ box-sizing:border-box; }
@@ -116,7 +115,6 @@ $properties = $stmt->fetchAll(PDO::FETCH_ASSOC);
             color:var(--text);
         }
 
-        /* Full-width container (so sides aren't empty) */
         .wrap{
             width:100%;
             max-width:none;
@@ -124,7 +122,6 @@ $properties = $stmt->fetchAll(PDO::FETCH_ASSOC);
             padding:18px 28px 40px;
         }
 
-        /* Top bar */
         .topbar{
             display:flex;
             justify-content:space-between;
@@ -159,7 +156,6 @@ $properties = $stmt->fetchAll(PDO::FETCH_ASSOC);
             border-color:#cfe0ff;
         }
 
-        /* search bar row */
         form.search-form{
             display:flex;
             gap:10px;
@@ -205,7 +201,6 @@ $properties = $stmt->fetchAll(PDO::FETCH_ASSOC);
             margin:14px 0 18px;
         }
 
-        /* property cards */
         .property-box{
             background:var(--card);
             border:1px solid var(--line);
@@ -234,43 +229,41 @@ $properties = $stmt->fetchAll(PDO::FETCH_ASSOC);
             flex:1;
             display:flex;
             flex-direction:column;
-            gap:8px;
+            gap:10px;
+        }
+
+        .price{
+            font-size:22px;
+            font-weight:900;
+            margin:0;
         }
 
         .details h3{
             margin:0;
-            font-size:20px;
+            font-size:18px;
             font-weight:900;
         }
 
-        .details p{
-            margin:0;
-            color:var(--muted);
-            line-height:1.35;
-            font-size:14px;
+        .details h3 a{
+            text-decoration:none;
+            color:inherit;
         }
+        .details h3 a:hover{ text-decoration:underline; }
 
-        .details p strong{
-            color:var(--text);
-        }
-
-        .details p.price{
-            color:var(--text);
-            font-size:22px;
-            font-weight:900;
-            margin-top:2px;
-        }
-
-        /* bed/bath row */
-        .meta{
+        .kv{
             display:flex;
-            gap:14px;
-            flex-wrap:wrap;
+            flex-direction:column;
+            gap:6px;
             color:var(--muted);
             font-size:14px;
         }
+        .kv p{
+            margin:0;
+        }
+        .kv strong{
+            color:var(--text);
+        }
 
-        /* favourite button aligned right */
         .details form.fav-form{
             margin-top:auto;
             display:flex;
@@ -288,7 +281,6 @@ $properties = $stmt->fetchAll(PDO::FETCH_ASSOC);
             background:#f8fafc;
         }
 
-        /* responsive */
         @media (max-width:860px){
             .wrap{ padding:16px; }
             .row{ flex-direction:column; }
@@ -358,22 +350,22 @@ $properties = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php endif; ?>
 
                 <div class="details">
-                    <h3><?php echo $p['title']; ?></h3>
-
-                    <div class="meta">
-                        <span><strong><?php echo $p['bedrooms']; ?></strong> bed</span>
-                        <span><strong><?php echo $p['bathrooms']; ?></strong> bath</span>
-                    </div>
 
                     <p class="price">£<?php echo $p['price']; ?></p>
 
-                    <p><strong>Status:</strong> <?php echo $p['status']; ?></p>
+                    <h3>
+                        <a href="property.php?id=<?php echo $p['property_id']; ?>">
+                            <?php echo $p['title']; ?>
+                        </a>
+                    </h3>
 
-                    <p><strong>Location:</strong>
-                        <?php echo $p['location']; ?>, <?php echo $p['city']; ?>, <?php echo $p['postcode']; ?>
-                    </p>
-
-                    <p><strong>Description:</strong> <?php echo $p['description']; ?></p>
+                    <div class="details-list">
+                        <p><strong>Status:</strong> <?php echo $p['status']; ?></p>
+                        <p><strong>Property Type:</strong> <?php echo $p['property_type_name']; ?></p>
+                        <p><strong>Bedrooms:</strong> <?php echo $p['bedrooms']; ?></p>
+                        <p><strong>Bathrooms:</strong> <?php echo $p['bathrooms']; ?></p>
+                        <p><strong>Location:</strong> <?php echo $p['location']; ?>, <?php echo $p['city']; ?>, <?php echo $p['postcode']; ?></p>
+                    </div>
 
                     <!-- Favourite button -->
                     <form method="post" action="listings.php" class="fav-form">
