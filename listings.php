@@ -351,13 +351,13 @@ $properties = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                 <div class="details">
 
-                    <p class="price">£<?php echo $p['price']; ?></p>
+                <h3>
+                  <a href="property.php?id=<?php echo $p['property_id']; ?>">
+                    <?php echo $p['title']; ?>
+                  </a>
+                </h3>
 
-                    <h3>
-                        <a href="property.php?id=<?php echo $p['property_id']; ?>">
-                            <?php echo $p['title']; ?>
-                        </a>
-                    </h3>
+                <p class="price">£<?php echo $p['price']; ?></p>
 
                     <div class="details-list">
                         <p><strong>Status:</strong> <?php echo $p['status']; ?></p>
