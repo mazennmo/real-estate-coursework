@@ -10,7 +10,6 @@ $sellUrl = isset($_SESSION['user_id']) ? 'propertylist.php' : 'signin.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real Estate Platform</title>
 
     <style>
         body {
@@ -150,11 +149,11 @@ $sellUrl = isset($_SESSION['user_id']) ? 'propertylist.php' : 'signin.php';
         <p>Explore a wide range of homes for sale across the country.</p>
     </div>
     <div class="feature-box">
-        <a href="favourites.php">Saved Favourites</a>
+        <a href = "favourites.php">Saved Favourites</a>
         <p>Keep track of the properties you love and compare them easily.</p>
     </div>
     <div class="feature-box">
-        <a href="sellers.php">Trusted Sellers</a>
+        <a href = "sellers.php">Trusted Sellers</a>
         <p>View seller ratings and reviews to buy with confidence.</p>
     </div>
 </section>
