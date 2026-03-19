@@ -107,7 +107,7 @@ try {
             reviewID INT AUTO_INCREMENT PRIMARY KEY,
             buyer_id INT NOT NULL,
             seller_id INT NOT NULL,
-            rating TINYINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+            rating INT NOT NULL,
             comment TEXT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(buyer_id) REFERENCES users(user_id) ON DELETE CASCADE,

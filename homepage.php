@@ -132,7 +132,7 @@ $sellUrl = isset($_SESSION['user_id']) ? 'propertylist.php' : 'signin.php';
 
     
     <form class="search-bar" method="get" action="listings.php">
-        <input type="text" name="location" placeholder="Enter city, postcode or area...">
+    <input type="text" name="search" placeholder="Enter city, postcode or area...">
         <button type="submit">Search</button>
     </form>
 

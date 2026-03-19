@@ -30,35 +30,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $city          = $_POST['city'];
     $postcode      = $_POST['postcode'];
     $description   = $_POST['description'];
+    $area_sqft     = $_POST['area_sqft'];
+    $garden_sqft   = $_POST['garden_sqft'];
+    $garage        = $_POST['garage'];
+
+
 
     // Insert property first
     $sql = "INSERT INTO properties
-            (seller_id, property_type_name, title, description, price, location, city, postcode, status, bedrooms, bathrooms)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            (seller_id, property_type_name, title, description, price, location, city, postcode, status, bedrooms, bathrooms, area_sqft, garden_sqft, garage)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
         $seller_id, $property_type, $title, $description, $price,
-        $location, $city, $postcode, $status, $bedrooms, $bathrooms
+        $location, $city, $postcode, $status, $bedrooms, $bathrooms,
+        $area_sqft, $garden_sqft, $garage
     ]);
+
+    $message = "Property listed successfully!";
+
+    // After inserting property
+    $property_id = $pdo->lastInsertId();
+
+    if ($_FILES['main_image']['name']) {
+
+        $filename = $_FILES['main_image']['name'];
+        $target = "uploads/" . $filename;
+
+        move_uploaded_file($_FILES['main_image']['tmp_name'], $target);
+
+        $sql = "UPDATE properties SET main_image = ? WHERE property_id = ?";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$target, $property_id]);
+    }
 }
-$message = "Property listed successfully!";
-
-// After inserting property
-$property_id = $pdo->lastInsertId();
-
-if ($_FILES['main_image']['name']) {
-
-    $filename = $_FILES['main_image']['name'];
-    $target = "uploads/" . $filename;
-
-    move_uploaded_file($_FILES['main_image']['tmp_name'], $target);
-
-    $sql = "UPDATE properties SET main_image = ? WHERE property_id = ?";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([$target, $property_id]);
-}
-
 ?>
 
 <!DOCTYPE html>
@@ -151,12 +157,13 @@ form p{
   font-size:13px;
 }
 
-/* Full width rows */
-form p:nth-of-type(1),
-form p:nth-of-type(7),
-form p:nth-of-type(10),
-form p:nth-of-type(11),
-form p:nth-of-type(12){
+/* Full width fields */
+form p:nth-of-type(1),   /* Title */
+form p:nth-of-type(7),   /* Location */
+form p:nth-of-type(13),  /* Description */
+form p:nth-of-type(14),  /* Main Image */
+form p:last-of-type      /* Button */
+{
   grid-column:1 / -1;
 }
 
@@ -173,7 +180,7 @@ input, textarea, select{
 }
 
 textarea{
-  min-height:120px;
+  min-height:160px;   /* Bigger description box */
   resize:vertical;
 }
 
@@ -184,7 +191,7 @@ textarea{
   border-radius:var(--radius);
   padding:14px;
   background:#fff;    
-  width:203%;
+  width:100%;
 }
 
 .file-box input[type="file"]{
@@ -195,7 +202,6 @@ textarea{
   font-size:14px;
 }
 
-/* Fix: make file button normal (no rounded corners) */
 input[type="file"]{
   border-radius:0 !important;
 }
@@ -225,14 +231,6 @@ button:hover{
 /* Mobile */
 @media (max-width:820px){
   form{ grid-template-columns:1fr; }
-
-  form p:nth-of-type(1),
-  form p:nth-of-type(7),
-  form p:nth-of-type(10),
-  form p:nth-of-type(11),
-  form p:nth-of-type(12){
-    grid-column:auto;
-  }
 }
 
 </style>
@@ -301,6 +299,15 @@ button:hover{
 
             <p>Postcode<br>
             <input type="text" name="postcode"></p>
+
+            <p>Area (sq ft)<br>
+            <input type="number" name="area_sqft"></p>
+
+            <p>Garden Size (sq ft)<br>
+            <input type="number" name="garden_sqft"></p>
+
+            <p>Garage Spaces<br>
+            <input type="number" name="garage"></p>
 
             <p>Description<br>
             <textarea name="description"></textarea></p>
